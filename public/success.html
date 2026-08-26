@@ -67,12 +67,15 @@
     if (isAuto) {
       // The content script (success-activate.js) does the actual activation work and
       // fires one of these events — this page just reflects whichever one shows up.
+      // Listening on `document`, not `window`: the content script runs in a separate
+      // "isolated world" from this page's own script, and only `document`-level events
+      // cross between the two worlds — `window`-level ones don't.
       show("statusWaiting");
-      window.addEventListener("ttd-autofill-activated", () => {
+      document.addEventListener("ttd-autofill-activated", () => {
         hide("statusWaiting");
         show("statusDone");
       });
-      window.addEventListener("ttd-autofill-activate-failed", () => {
+      document.addEventListener("ttd-autofill-activate-failed", () => {
         hide("statusWaiting");
         show("statusFailed");
         show("manualBlock");
