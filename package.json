@@ -1,0 +1,13 @@
+{
+  "name": "ttd-autofill-backend",
+  "version": "1.0.0",
+  "description": "License/payment backend for TTD Darshan Autofill extension (Vercel Functions)",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "razorpay": "^2.9.4"
+  }
+}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>You're unlocked</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  body { background: #fafafa; color: #222; margin: 0; padding: 30px 16px; }
+  .card { max-width: 420px; margin: 40px auto; background: #fff; border: 1px solid #e5e0da; border-radius: 12px; padding: 24px; text-align: center; }
+  h1 { font-size: 19px; color: #1a7a3c; margin: 0 0 10px; }
+  .key { font-size: 20px; font-weight: 700; letter-spacing: 1px; background: #f5f0ea; padding: 12px 16px; border-radius: 8px; margin: 16px 0; word-break: break-all; }
+  p { font-size: 13.5px; color: #555; line-height: 1.5; }
+  button { background: #d9631f; color: #fff; border: none; padding: 10px 16px; border-radius: 7px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+  #manualBlock { display: none; }
+  #manualBlock.show { display: block; }
+  .status-box {
+    display: none;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 16px 0;
+  }
+  .status-box.show { display: block; }
+  .status-waiting { background: #fff8ec; color: #7a5a12; border: 1px solid #f0d9a8; }
+  .status-done { background: #e7f6ec; color: #1a7a3c; border: 1px solid #b9e3c6; }
+  .status-failed { background: #fdeceb; color: #a3312a; border: 1px solid #f3c6c2; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Payment successful ✓</h1>
+
+    <div id="statusWaiting" class="status-box status-waiting">⏳ Activating in this browser…</div>
+    <div id="statusDone" class="status-box status-done">✓ Activated in this browser — you're ready to go, no key needed.</div>
+    <div id="statusFailed" class="status-box status-failed">Couldn't auto-activate here (extension not detected in this browser, or it's already been activated once). Copy your key below and paste it into the extension instead.</div>
+
+    <div id="manualBlock">
+      <p>Your license key (also emailed to you):</p>
+      <div class="key" id="keyBox">—</div>
+      <button id="copyBtn">Copy key</button>
+      <p id="expiryText"></p>
+      <p>Paste this key into the extension popup, under "License", and click Activate.</p>
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const key = params.get("key") || "—";
+    const expires = params.get("expires");
+    const isAuto = params.get("auto") === "1";
+
+    document.getElementById("keyBox").textContent = key;
+    if (expires) {
+      document.getElementById("expiryText").textContent =
+        "Valid until " + new Date(expires).toLocaleString();
+    }
+    document.getElementById("copyBtn").addEventListener("click", () => {
+      navigator.clipboard.writeText(key).then(() => {
+        document.getElementById("copyBtn").textContent = "Copied!";
+      });
+    });
+
+    function show(id) { document.getElementById(id).classList.add("show"); }
+    function hide(id) { document.getElementById(id).classList.remove("show"); }
+
+    if (isAuto) {
+      // The content script (success-activate.js) does the actual activation work and
+      // fires one of these events — this page just reflects whichever one shows up.
+      // Listening on `document`, not `window`: the content script runs in a separate
+      // "isolated world" from this page's own script, and only `document`-level events
+      // cross between the two worlds — `window`-level ones don't.
+      show("statusWaiting");
+      document.addEventListener("ttd-autofill-activated", () => {
+        hide("statusWaiting");
+        show("statusDone");
+      });
+      document.addEventListener("ttd-autofill-activate-failed", () => {
+        hide("statusWaiting");
+        show("statusFailed");
+        show("manualBlock");
+      });
+      // If neither event fires within a few seconds (extension not installed at all, so
+      // its content script never even ran here), fall back to the manual instructions.
+      setTimeout(() => {
+        if (document.getElementById("statusWaiting").classList.contains("show")) {
+          hide("statusWaiting");
+          show("statusFailed");
+          show("manualBlock");
+        }
+      }, 4000);
+    } else {
+      show("manualBlock");
+    }
+  </script>
+</body>
+</html>

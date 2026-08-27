@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>TTD Darshan Autofill — Checkout</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  body { background: #fafafa; color: #222; margin: 0; padding: 30px 16px; }
+  .card { max-width: 420px; margin: 40px auto; background: #fff; border: 1px solid #e5e0da; border-radius: 12px; padding: 24px; }
+  h1 { font-size: 18px; color: #b5451b; margin: 0 0 6px; }
+  p { font-size: 13.5px; color: #555; line-height: 1.5; }
+  label { font-size: 12.5px; color: #444; display:block; margin: 14px 0 5px; }
+  input, select { width: 100%; padding: 9px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+  button { width: 100%; margin-top: 18px; background: #d9631f; color: #fff; border: none; padding: 12px; border-radius: 7px; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: 0.6; cursor: default; }
+  #err { color: #b5451b; font-size: 13px; margin-top: 10px; min-height: 16px; }
+  .plan-price { font-weight: 700; color: #b5451b; }
+  .auto-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    margin-top: 16px; font-size: 12.5px; color: #444; cursor: pointer;
+  }
+  .auto-row input { width: auto; margin-top: 2px; }
+  .auto-sub { display: block; font-size: 11px; color: #888; margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Unlock TTD Darshan Autofill</h1>
+    <p id="planDesc">Loading plan…</p>
+    <label for="email">Email (your license key goes here)</label>
+    <input type="email" id="email" placeholder="you@example.com">
+    <label class="auto-row">
+      <input type="checkbox" id="autoActivate" checked>
+      <span>
+        Activate automatically in this browser
+        <span class="auto-sub">Needs the TTD Darshan Autofill extension installed here. Otherwise, copy your key and paste it into the extension yourself after payment.</span>
+      </span>
+    </label>
+    <button id="payBtn">Pay now</button>
+    <div id="err"></div>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const plan = params.get("plan");
+    const PLAN_LABELS = { "7d": "7 days — ₹99", "30d": "30 days — ₹299", "90d": "90 days — ₹699" };
+    document.getElementById("planDesc").textContent = PLAN_LABELS[plan]
+      ? `Plan: ${PLAN_LABELS[plan]}`
+      : "Unknown plan — go back and pick a plan again.";
+
+    const payBtn = document.getElementById("payBtn");
+    const errEl = document.getElementById("err");
+
+    payBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      if (!email || !plan || !PLAN_LABELS[plan]) {
+        errEl.textContent = "Enter a valid email.";
+        return;
+      }
+      payBtn.disabled = true;
+      errEl.textContent = "";
+
+      try {
+        const orderRes = await fetch("/api/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, plan })
+        });
+        const order = await orderRes.json();
+        if (!orderRes.ok) throw new Error(order.error || "Could not start checkout.");
+
+        const rzp = new Razorpay({
+          key: order.key_id,
+          amount: order.amount,
+          currency: order.currency,
+          order_id: order.order_id,
+          name: "TTD Darshan Autofill",
+          description: `${order.plan_label} plan`,
+          prefill: { email },
+          theme: { color: "#d9631f" },
+          handler: async function (response) {
+            try {
+              const verifyRes = await fetch("/api/verify-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(response)
+              });
+              const result = await verifyRes.json();
+              if (!verifyRes.ok) throw new Error(result.error || "Payment verification failed.");
+              const auto = document.getElementById("autoActivate").checked ? "&auto=1" : "";
+              location.href = `/success.html?key=${encodeURIComponent(result.license_key)}&expires=${encodeURIComponent(result.expires_at)}${auto}`;
+            } catch (e) {
+              errEl.textContent = e.message;
+              payBtn.disabled = false;
+            }
+          },
+          modal: {
+            ondismiss: function () { payBtn.disabled = false; }
+          }
+        });
+        rzp.on("payment.failed", function (resp) {
+          errEl.textContent = "Payment failed: " + (resp.error && resp.error.description ? resp.error.description : "please try again.");
+          payBtn.disabled = false;
+        });
+        rzp.open();
+      } catch (e) {
+        errEl.textContent = e.message;
+        payBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
