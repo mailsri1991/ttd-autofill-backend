@@ -201,4 +201,36 @@
   async function loadHistory() {
     if (!threadId) return;
     try {
-      const res = await fetch(`${API_BASE}/api/chat-poll?threadId=${
+      const res = await fetch(`${API_BASE}/api/chat-poll?threadId=${encodeURIComponent(threadId)}`);
+      const data = await res.json();
+      const body = document.getElementById("ttd-chat-body");
+      body.innerHTML = "";
+      (data.messages || []).forEach(m => {
+        appendMessage(m.sender, m.message);
+        lastMessageAt = m.created_at;
+      });
+    } catch (e) { /* silent — will retry on next poll */ }
+  }
+
+  function startPolling() {
+    stopPolling();
+    pollTimer = setInterval(async () => {
+      if (!panelOpen || !threadId) return;
+      try {
+        const url = `${API_BASE}/api/chat-poll?threadId=${encodeURIComponent(threadId)}` +
+          (lastMessageAt ? `&after=${encodeURIComponent(lastMessageAt)}` : "");
+        const res = await fetch(url);
+        const data = await res.json();
+        (data.messages || []).forEach(m => {
+          appendMessage(m.sender, m.message);
+          lastMessageAt = m.created_at;
+        });
+      } catch (e) { /* silent — will retry next tick */ }
+    }, POLL_MS);
+  }
+
+  function stopPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+  }
+})();
