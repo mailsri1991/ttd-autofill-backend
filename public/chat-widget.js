@@ -186,6 +186,11 @@
       if (data.threadId) {
         threadId = data.threadId;
         saveThread();
+        // Re-sync with the server's own record of the conversation right away, so the
+        // next polling tick (which only asks for messages "after" the last one we've
+        // already shown) doesn't re-fetch this same message with no filter and render
+        // it a second time.
+        await loadHistory();
         startPolling();
       }
     } catch (err) {
