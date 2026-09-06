@@ -61,6 +61,7 @@
     #ttd-chat-send {
       background: #d9631f; color: #fff; border: none; border-radius: 8px; padding: 0 14px; cursor: pointer; font-weight: 600;
     }
+    #ttd-chat-send:disabled { opacity: 0.6; cursor: default; }
     #ttd-chat-intro { padding: 14px; }
     #ttd-chat-intro input {
       width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px;
@@ -165,12 +166,15 @@
   async function sendMessage(e) {
     e.preventDefault();
     const input = document.getElementById("ttd-chat-input");
+    const sendBtn = document.getElementById("ttd-chat-send");
     const text = input.value.trim();
     if (!text) return;
     if (!visitorEmail) { showChatUI(); return; }
+    if (sendBtn.disabled) return;
 
     appendMessage("visitor", text);
     input.value = "";
+    sendBtn.disabled = true;
 
     try {
       const res = await fetch(`${API_BASE}/api/chat-send`, {
@@ -186,6 +190,8 @@
       }
     } catch (err) {
       appendMessage("admin", "Sorry, that message couldn't be sent. Please try again.");
+    } finally {
+      sendBtn.disabled = false;
     }
   }
 
