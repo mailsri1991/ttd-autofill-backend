@@ -1,0 +1,70 @@
+{
+  "events": [
+    {
+      "id": "special_entry_darshan",
+      "label": "Special Entry Darshan (₹300)",
+      "releaseDayOfMonth": 24,
+      "releaseHour": 10,
+      "releaseMinute": 0,
+      "dayBefore": {
+        "enabled": true,
+        "hour": 18,
+        "minute": 0,
+        "skipIfActivePass": true,
+        "title": "Special Entry Darshan tickets release tomorrow",
+        "message": "Tickets usually open tomorrow at 10 AM. Get your pass now so autofill is ready when the window opens."
+      },
+      "dayOf": {
+        "enabled": true,
+        "minutesBefore": 15,
+        "skipIfActivePass": false,
+        "title": "Special Entry Darshan opening soon",
+        "message": "Tickets usually open in 15 minutes (10 AM). Get to the booking page and be ready to click Fill."
+      }
+    },
+    {
+      "id": "srivani",
+      "label": "Srivani Trust Darshan",
+      "releaseDayOfMonth": 23,
+      "releaseHour": 11,
+      "releaseMinute": 0,
+      "dayBefore": {
+        "enabled": true,
+        "hour": 18,
+        "minute": 0,
+        "skipIfActivePass": true,
+        "title": "Srivani Trust tickets release tomorrow",
+        "message": "Tickets usually open tomorrow at 11 AM. Get your pass now so autofill is ready when the window opens."
+      },
+      "dayOf": {
+        "enabled": true,
+        "minutesBefore": 15,
+        "skipIfActivePass": false,
+        "title": "Srivani Trust tickets opening soon",
+        "message": "Tickets usually open in 15 minutes (11 AM). Get to the booking page and be ready to click Fill."
+      }
+    },
+    {
+      "id": "senior_citizen_darshan",
+      "label": "Senior Citizens & Physically Challenged (free)",
+      "releaseDayOfMonth": 23,
+      "releaseHour": 15,
+      "releaseMinute": 0,
+      "dayBefore": {
+        "enabled": true,
+        "hour": 18,
+        "minute": 0,
+        "skipIfActivePass": false,
+        "title": "Free senior citizen darshan tickets release tomorrow",
+        "message": "Free darshan tickets for senior citizens and the physically challenged usually open tomorrow at 3 PM."
+      },
+      "dayOf": {
+        "enabled": true,
+        "minutesBefore": 15,
+        "skipIfActivePass": false,
+        "title": "Senior citizen darshan tickets opening soon",
+        "message": "Free tickets usually open in 15 minutes (3 PM). Head to the TTD booking page to apply."
+      }
+    }
+  ]
+}
