@@ -53,7 +53,7 @@
   <script>
     const params = new URLSearchParams(location.search);
     const plan = params.get("plan");
-    const PLAN_LABELS = { "7d": "7 days — ₹99", "30d": "30 days — ₹299", "90d": "90 days — ₹699" };
+    const PLAN_LABELS = { "7d": "7 days — ₹99", "30d": "30 days — ₹299", "90d": "90 days — ₹699", "365d": "1 year — ₹1599" };
     document.getElementById("planDesc").textContent = PLAN_LABELS[plan]
       ? `Plan: ${PLAN_LABELS[plan]}`
       : "Unknown plan — go back and pick a plan again.";
