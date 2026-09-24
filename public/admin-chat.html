@@ -29,9 +29,27 @@
   .thread-item .time { color: #999; font-size: 11px; }
   #chat-area { flex: 1; display: flex; flex-direction: column; }
   #chat-messages { flex: 1; overflow-y: auto; padding: 16px; background: #faf7f4; }
-  .msg { margin: 6px 0; max-width: 60%; padding: 8px 12px; border-radius: 10px; line-height: 1.4; font-size: 13.5px; }
-  .msg.visitor { background: #eee; color: #222; margin-right: auto; border-bottom-left-radius: 2px; }
-  .msg.admin { background: #d9631f; color: #fff; margin-left: auto; border-bottom-right-radius: 2px; }
+  .msg-row { display: flex; flex-direction: column; margin: 6px 0; max-width: 60%; }
+  .msg-row.visitor { margin-right: auto; align-items: flex-start; }
+  .msg-row.admin, .msg-row.bot { margin-left: auto; align-items: flex-end; }
+  .msg { padding: 8px 12px; border-radius: 10px; line-height: 1.4; font-size: 13.5px; }
+  .msg.visitor { background: #eee; color: #222; border-bottom-left-radius: 2px; }
+  .msg.admin { background: #d9631f; color: #fff; border-bottom-right-radius: 2px; }
+  .msg.bot { background: #fff3e0; color: #7a4a17; border: 1px dashed #e0b273; border-bottom-right-radius: 2px; }
+  .msg-time { font-size: 10.5px; color: #999; margin: 2px 6px 0; }
+  .msg-tag { font-size: 10px; color: #b5451b; font-weight: 700; text-transform: uppercase; margin: 0 6px; letter-spacing: 0.3px; }
+  .presence-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin-right: 5px; flex-shrink: 0; }
+  .presence-dot.online { background: #3fa34d; }
+  .thread-item { position: relative; }
+  .thread-item .name-row { display: flex; align-items: center; }
+  .thread-item .meta-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .status-pill { font-size: 10px; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; font-weight: 700; }
+  .status-pill.open { background: #e6f4ea; color: #3fa34d; }
+  .status-pill.closed { background: #f0ece6; color: #999; }
+  .category-pill { font-size: 10px; padding: 2px 6px; border-radius: 10px; background: #fbe9de; color: #b5451b; }
+  #thread-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #e5e0da; background: #fff; font-size: 13px; }
+  #thread-header select { font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid #ddd; }
+  #thread-header-name { font-weight: 600; display: flex; align-items: center; }
   #reply-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid #e5e0da; background: #fff; }
   #reply-input { flex: 1; padding: 9px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
   #reply-send { background: #d9631f; color: #fff; border: none; border-radius: 6px; padding: 0 16px; cursor: pointer; font-weight: 600; }
@@ -67,6 +85,16 @@
     <div id="main">
       <div id="thread-list"></div>
       <div id="chat-area">
+        <div id="thread-header" style="display:none;">
+          <div id="thread-header-name"></div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <select id="category-select"></select>
+            <select id="status-select">
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+        </div>
         <div id="chat-messages"><div id="empty-state">Select a conversation on the left.</div></div>
         <form id="reply-form" style="display:none;">
           <input id="reply-input" type="text" placeholder="Type a reply…" autocomplete="off">
@@ -83,6 +111,13 @@
     let lastMessageAt = null;
     let threadsTimer = null;
     let messagesTimer = null;
+    let knownCategories = [];
+    let threadsById = {};
+
+    function fmtTime(iso) {
+      if (!iso) return "";
+      return new Date(iso).toLocaleString();
+    }
 
     function authHeaders() {
       return { "Content-Type": "application/json", "x-admin-password": adminPassword };
@@ -132,15 +167,42 @@
       const res = await fetch(`${API_BASE}/api/chat-admin?action=threads`, { headers: { "x-admin-password": adminPassword } });
       if (!res.ok) return;
       const data = await res.json();
+      if (data.categories) knownCategories = data.categories;
       const list = document.getElementById("thread-list");
       list.innerHTML = "";
+      threadsById = {};
       (data.threads || []).forEach(t => {
+        threadsById[t.id] = t;
         const item = document.createElement("div");
         item.className = "thread-item" + (t.id === activeThreadId ? " active" : "");
-        item.innerHTML = `<div class="name">${t.visitor_name || t.visitor_email}</div><div class="time">${new Date(t.last_message_at).toLocaleString()}</div>`;
+        item.innerHTML = `
+          <div class="name-row"><span class="presence-dot${t.online ? " online" : ""}" title="${t.online ? "Online now" : "Offline"}"></span><span class="name">${t.visitor_name || t.visitor_email}</span></div>
+          <div class="time">${fmtTime(t.last_message_at)}</div>
+          <div class="meta-row">
+            <span class="status-pill ${t.status}">${t.status}</span>
+            ${t.category ? `<span class="category-pill">${t.category}</span>` : ""}
+          </div>`;
         item.addEventListener("click", () => openThread(t.id));
         list.appendChild(item);
       });
+      // Keep the header controls in sync if the active thread's own row changed
+      // (e.g. auto-closed by the cron, or reopened by a new visitor message).
+      if (activeThreadId && threadsById[activeThreadId]) updateThreadHeader(threadsById[activeThreadId]);
+    }
+
+    function populateCategorySelect() {
+      const sel = document.getElementById("category-select");
+      sel.innerHTML = `<option value="">(no category)</option>` +
+        knownCategories.map(c => `<option value="${c}">${c}</option>`).join("");
+    }
+
+    function updateThreadHeader(t) {
+      document.getElementById("thread-header").style.display = "flex";
+      document.getElementById("thread-header-name").innerHTML =
+        `<span class="presence-dot${t.online ? " online" : ""}"></span>${t.visitor_name || t.visitor_email}`;
+      if (!document.getElementById("category-select").options.length) populateCategorySelect();
+      document.getElementById("category-select").value = t.category || "";
+      document.getElementById("status-select").value = t.status || "open";
     }
 
     function openThread(threadId) {
@@ -148,11 +210,28 @@
       lastMessageAt = null;
       document.getElementById("reply-form").style.display = "flex";
       document.getElementById("chat-messages").innerHTML = "";
+      if (threadsById[threadId]) updateThreadHeader(threadsById[threadId]);
       loadMessages();
       clearInterval(messagesTimer);
       messagesTimer = setInterval(loadMessages, 4000);
       loadThreads();
     }
+
+    document.getElementById("category-select").addEventListener("change", async (e) => {
+      if (!activeThreadId) return;
+      await fetch(`${API_BASE}/api/chat-admin?action=classify`, {
+        method: "POST", headers: authHeaders(), body: JSON.stringify({ threadId: activeThreadId, category: e.target.value })
+      });
+      loadThreads();
+    });
+
+    document.getElementById("status-select").addEventListener("change", async (e) => {
+      if (!activeThreadId) return;
+      await fetch(`${API_BASE}/api/chat-admin?action=status`, {
+        method: "POST", headers: authHeaders(), body: JSON.stringify({ threadId: activeThreadId, status: e.target.value })
+      });
+      loadThreads();
+    });
 
     async function loadMessages() {
       if (!activeThreadId) return;
@@ -164,10 +243,23 @@
       const box = document.getElementById("chat-messages");
       box.innerHTML = "";
       (data.messages || []).forEach(m => {
-        const el = document.createElement("div");
-        el.className = "msg " + m.sender;
-        el.textContent = m.message;
-        box.appendChild(el);
+        const row = document.createElement("div");
+        row.className = "msg-row " + m.sender;
+        const bubble = document.createElement("div");
+        bubble.className = "msg " + m.sender;
+        bubble.textContent = m.message;
+        row.appendChild(bubble);
+        if (m.sender === "bot") {
+          const tag = document.createElement("div");
+          tag.className = "msg-tag";
+          tag.textContent = "Auto-reply";
+          row.appendChild(tag);
+        }
+        const time = document.createElement("div");
+        time.className = "msg-time";
+        time.textContent = fmtTime(m.created_at);
+        row.appendChild(time);
+        box.appendChild(row);
         lastMessageAt = m.created_at;
       });
       box.scrollTop = box.scrollHeight;
