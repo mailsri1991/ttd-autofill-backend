@@ -9,6 +9,7 @@ import { CATEGORIES } from "../lib/faq.js";
 //   ?action=threads              GET  — list threads, newest activity first
 //   ?action=messages&threadId=…  GET  — full message history for one thread
 //   action=reply (POST body)     — send an admin reply into a thread
+//   action=upload (POST body)    — send an admin screenshot into a thread
 //   action=toggle (POST body)    — flip the admin's own online/offline flag
 //   action=status (POST body)    — set a thread's status to "open" or "closed"
 //   action=classify (POST body)  — set a thread's root-cause category
@@ -17,6 +18,12 @@ import { CATEGORIES } from "../lib/faq.js";
 // it's derived here from how recently chat-poll.js last stamped
 // chat_threads.visitor_last_seen_at (within ONLINE_THRESHOLD_MS counts as online).
 const ONLINE_THRESHOLD_MS = 20 * 1000;
+
+// Screenshot uploads share this file rather than their own api/chat-upload.js route —
+// Vercel's Hobby plan caps a deployment at 12 serverless functions.
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // 4MB
+const ALLOWED_UPLOAD_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const UPLOAD_BUCKET = "chat-attachments";
 
 function isVisitorOnline(lastSeenAt) {
   if (!lastSeenAt) return false;
@@ -69,6 +76,39 @@ export default {
         if (msgErr) throw msgErr;
         await supabase.from("chat_threads").update({ last_message_at: new Date().toISOString() }).eq("id", threadId);
         return jsonResponse({ ok: true });
+      }
+
+      if (request.method === "POST" && action === "upload") {
+        const { threadId, fileName, mimeType, dataBase64 } = await request.json();
+        if (!threadId || !fileName || !mimeType || !dataBase64) {
+          return jsonResponse({ error: "threadId, fileName, mimeType and dataBase64 are required." }, { status: 400 });
+        }
+        if (!ALLOWED_UPLOAD_TYPES.includes(mimeType)) {
+          return jsonResponse({ error: "Only PNG, JPEG, WEBP or GIF screenshots are supported." }, { status: 400 });
+        }
+        const buffer = Buffer.from(dataBase64, "base64");
+        if (buffer.length > MAX_UPLOAD_BYTES) {
+          return jsonResponse({ error: "Image is too large (max 4MB)." }, { status: 400 });
+        }
+
+        const ext = (mimeType.split("/")[1] || "png").replace("jpeg", "jpg");
+        const path = `${threadId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from(UPLOAD_BUCKET).upload(path, buffer, {
+          contentType: mimeType,
+          upsert: false
+        });
+        if (uploadErr) throw uploadErr;
+
+        const { data: publicUrlData } = supabase.storage.from(UPLOAD_BUCKET).getPublicUrl(path);
+        const attachmentUrl = publicUrlData.publicUrl;
+
+        const { error: msgErr } = await supabase
+          .from("chat_messages")
+          .insert({ thread_id: threadId, sender: "admin", message: "", attachment_url: attachmentUrl });
+        if (msgErr) throw msgErr;
+        await supabase.from("chat_threads").update({ last_message_at: new Date().toISOString() }).eq("id", threadId);
+
+        return jsonResponse({ ok: true, attachmentUrl });
       }
 
       if (request.method === "POST" && action === "toggle") {
