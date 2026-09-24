@@ -51,9 +51,14 @@
     #ttd-chat-status { font-weight: 400; font-size: 11.5px; opacity: 0.9; }
     #ttd-chat-close { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; }
     #ttd-chat-body { flex: 1; overflow-y: auto; padding: 10px 12px; background: #faf7f4; }
-    .ttd-chat-msg { margin: 6px 0; max-width: 85%; padding: 8px 10px; border-radius: 10px; line-height: 1.4; }
-    .ttd-chat-msg.visitor { background: #d9631f; color: #fff; margin-left: auto; border-bottom-right-radius: 2px; }
-    .ttd-chat-msg.admin { background: #eee; color: #222; margin-right: auto; border-bottom-left-radius: 2px; }
+    .ttd-chat-row { display: flex; flex-direction: column; margin: 6px 0; max-width: 85%; }
+    .ttd-chat-row.visitor { margin-left: auto; align-items: flex-end; }
+    .ttd-chat-row.admin, .ttd-chat-row.bot { margin-right: auto; align-items: flex-start; }
+    .ttd-chat-msg { padding: 8px 10px; border-radius: 10px; line-height: 1.4; }
+    .ttd-chat-msg.visitor { background: #d9631f; color: #fff; border-bottom-right-radius: 2px; }
+    .ttd-chat-msg.admin { background: #eee; color: #222; border-bottom-left-radius: 2px; }
+    .ttd-chat-msg.bot { background: #fff3e0; color: #7a4a17; border: 1px dashed #e0b273; border-bottom-left-radius: 2px; }
+    .ttd-chat-time { font-size: 10px; color: #999; margin: 2px 4px 0; }
     #ttd-chat-form { border-top: 1px solid #eee; padding: 8px; display: flex; gap: 6px; }
     #ttd-chat-input {
       flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 8px 10px; font-size: 13px; resize: none;
@@ -172,7 +177,7 @@
     if (!visitorEmail) { showChatUI(); return; }
     if (sendBtn.disabled) return;
 
-    appendMessage("visitor", text);
+    appendMessage("visitor", text, new Date().toISOString());
     input.value = "";
     sendBtn.disabled = true;
 
@@ -200,12 +205,26 @@
     }
   }
 
-  function appendMessage(sender, text) {
+  function fmtTime(iso) {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return ""; }
+  }
+
+  function appendMessage(sender, text, createdAt) {
     const body = document.getElementById("ttd-chat-body");
-    const el = document.createElement("div");
-    el.className = `ttd-chat-msg ${sender}`;
-    el.textContent = text;
-    body.appendChild(el);
+    const row = document.createElement("div");
+    row.className = `ttd-chat-row ${sender}`;
+    const bubble = document.createElement("div");
+    bubble.className = `ttd-chat-msg ${sender}`;
+    bubble.textContent = text;
+    row.appendChild(bubble);
+    const time = document.createElement("div");
+    time.className = "ttd-chat-time";
+    time.textContent = (sender === "bot" ? "Auto-reply · " : "") + fmtTime(createdAt);
+    row.appendChild(time);
+    body.appendChild(row);
     body.scrollTop = body.scrollHeight;
   }
 
@@ -217,7 +236,7 @@
       const body = document.getElementById("ttd-chat-body");
       body.innerHTML = "";
       (data.messages || []).forEach(m => {
-        appendMessage(m.sender, m.message);
+        appendMessage(m.sender, m.message, m.created_at);
         lastMessageAt = m.created_at;
       });
     } catch (e) { /* silent — will retry on next poll */ }
@@ -233,7 +252,7 @@
         const res = await fetch(url);
         const data = await res.json();
         (data.messages || []).forEach(m => {
-          appendMessage(m.sender, m.message);
+          appendMessage(m.sender, m.message, m.created_at);
           lastMessageAt = m.created_at;
         });
       } catch (e) { /* silent — will retry next tick */ }
