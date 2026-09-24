@@ -52,7 +52,7 @@ export default {
         if (!threadId) return jsonResponse({ error: "threadId is required." }, { status: 400 });
         const { data, error } = await supabase
           .from("chat_messages")
-          .select("id, sender, message, created_at")
+          .select("id, sender, message, attachment_url, created_at")
           .eq("thread_id", threadId)
           .order("created_at", { ascending: true });
         if (error) throw error;
