@@ -315,7 +315,7 @@
           reader.readAsDataURL(file);
         });
         const dataBase64 = dataUrl.split(",")[1] || "";
-        await fetch(`${API_BASE}/api/chat-upload`, {
+        await fetch(`${API_BASE}/api/chat-admin?action=upload`, {
           method: "POST", headers: authHeaders(),
           body: JSON.stringify({ threadId: activeThreadId, fileName: file.name, mimeType: file.type, dataBase64 })
         });
