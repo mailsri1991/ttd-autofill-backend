@@ -67,6 +67,11 @@
       background: #d9631f; color: #fff; border: none; border-radius: 8px; padding: 0 14px; cursor: pointer; font-weight: 600;
     }
     #ttd-chat-send:disabled { opacity: 0.6; cursor: default; }
+    #ttd-chat-attach {
+      background: #eee; color: #555; border: none; border-radius: 8px; width: 36px; cursor: pointer; font-size: 16px;
+    }
+    #ttd-chat-attach:disabled { opacity: 0.6; cursor: default; }
+    .ttd-chat-img { max-width: 100%; border-radius: 8px; display: block; cursor: pointer; }
     #ttd-chat-intro { padding: 14px; }
     #ttd-chat-intro input {
       width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px;
@@ -100,6 +105,8 @@
       <button id="ttd-chat-start">Start chat</button>
     </div>
     <form id="ttd-chat-form" style="display:none;">
+      <button id="ttd-chat-attach" type="button" title="Attach a screenshot">📎</button>
+      <input id="ttd-chat-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;">
       <textarea id="ttd-chat-input" rows="1" placeholder="Type a message…"></textarea>
       <button id="ttd-chat-send" type="submit">Send</button>
     </form>
@@ -117,6 +124,10 @@
     document.getElementById("ttd-chat-close").addEventListener("click", togglePanel);
     document.getElementById("ttd-chat-start").addEventListener("click", startChat);
     document.getElementById("ttd-chat-form").addEventListener("submit", sendMessage);
+    document.getElementById("ttd-chat-attach").addEventListener("click", () => {
+      document.getElementById("ttd-chat-file").click();
+    });
+    document.getElementById("ttd-chat-file").addEventListener("change", handleFileSelected);
 
     if (threadId && visitorEmail) showChatUI();
     loadStatus();
@@ -212,13 +223,28 @@
     } catch (e) { return ""; }
   }
 
-  function appendMessage(sender, text, createdAt) {
+  function appendMessage(sender, text, createdAt, attachmentUrl) {
     const body = document.getElementById("ttd-chat-body");
     const row = document.createElement("div");
     row.className = `ttd-chat-row ${sender}`;
     const bubble = document.createElement("div");
     bubble.className = `ttd-chat-msg ${sender}`;
-    bubble.textContent = text;
+    if (attachmentUrl) {
+      const img = document.createElement("img");
+      img.className = "ttd-chat-img";
+      img.src = attachmentUrl;
+      img.alt = "Screenshot";
+      img.addEventListener("click", () => window.open(attachmentUrl, "_blank"));
+      bubble.appendChild(img);
+      if (text) {
+        const caption = document.createElement("div");
+        caption.style.marginTop = "6px";
+        caption.textContent = text;
+        bubble.appendChild(caption);
+      }
+    } else {
+      bubble.textContent = text;
+    }
     row.appendChild(bubble);
     const time = document.createElement("div");
     time.className = "ttd-chat-time";
@@ -226,6 +252,57 @@
     row.appendChild(time);
     body.appendChild(row);
     body.scrollTop = body.scrollHeight;
+  }
+
+  function handleFileSelected(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+    if (!visitorEmail) { showChatUI(); return; }
+
+    const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      appendMessage("admin", "That file type isn't supported — please attach a PNG, JPEG, WEBP or GIF screenshot.");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      appendMessage("admin", "That image is too large (max 4MB). Please attach a smaller screenshot.");
+      return;
+    }
+
+    const attachBtn = document.getElementById("ttd-chat-attach");
+    attachBtn.disabled = true;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const dataUrl = reader.result;
+        const dataBase64 = dataUrl.split(",")[1] || "";
+        const res = await fetch(`${API_BASE}/api/chat-upload`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            threadId, name: visitorName, email: visitorEmail,
+            fileName: file.name, mimeType: file.type, dataBase64
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.threadId) {
+          appendMessage("admin", (data && data.error) || "Sorry, that screenshot couldn't be sent. Please try again.");
+          return;
+        }
+        threadId = data.threadId;
+        saveThread();
+        await loadHistory();
+        startPolling();
+      } catch (err) {
+        appendMessage("admin", "Sorry, that screenshot couldn't be sent. Please try again.");
+      } finally {
+        attachBtn.disabled = false;
+      }
+    };
+    reader.onerror = () => { attachBtn.disabled = false; };
+    reader.readAsDataURL(file);
   }
 
   async function loadHistory() {
@@ -236,7 +313,7 @@
       const body = document.getElementById("ttd-chat-body");
       body.innerHTML = "";
       (data.messages || []).forEach(m => {
-        appendMessage(m.sender, m.message, m.created_at);
+        appendMessage(m.sender, m.message, m.created_at, m.attachment_url);
         lastMessageAt = m.created_at;
       });
     } catch (e) { /* silent — will retry on next poll */ }
@@ -252,7 +329,7 @@
         const res = await fetch(url);
         const data = await res.json();
         (data.messages || []).forEach(m => {
-          appendMessage(m.sender, m.message, m.created_at);
+          appendMessage(m.sender, m.message, m.created_at, m.attachment_url);
           lastMessageAt = m.created_at;
         });
       } catch (e) { /* silent — will retry next tick */ }
