@@ -31,7 +31,7 @@ export default {
 
       let query = supabase
         .from("chat_messages")
-        .select("id, sender, message, created_at")
+        .select("id, sender, message, attachment_url, created_at")
         .eq("thread_id", threadId)
         .order("created_at", { ascending: true });
 
