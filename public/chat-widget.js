@@ -278,7 +278,7 @@
       try {
         const dataUrl = reader.result;
         const dataBase64 = dataUrl.split(",")[1] || "";
-        const res = await fetch(`${API_BASE}/api/chat-upload`, {
+        const res = await fetch(`${API_BASE}/api/chat-send`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
