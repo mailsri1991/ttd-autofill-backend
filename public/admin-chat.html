@@ -54,6 +54,9 @@
   #reply-input { flex: 1; padding: 9px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
   #reply-send { background: #d9631f; color: #fff; border: none; border-radius: 6px; padding: 0 16px; cursor: pointer; font-weight: 600; }
   #reply-send:disabled { opacity: 0.6; cursor: default; }
+  #reply-attach { background: #eee; color: #555; border: none; border-radius: 6px; width: 40px; cursor: pointer; font-size: 15px; }
+  #reply-attach:disabled { opacity: 0.6; cursor: default; }
+  .msg-img { max-width: 260px; border-radius: 8px; display: block; cursor: pointer; }
   #empty-state { padding: 40px; text-align: center; color: #999; font-size: 13px; }
   .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
   .switch input { opacity: 0; width: 0; height: 0; }
@@ -97,6 +100,8 @@
         </div>
         <div id="chat-messages"><div id="empty-state">Select a conversation on the left.</div></div>
         <form id="reply-form" style="display:none;">
+          <button id="reply-attach" type="button" title="Attach a screenshot">📎</button>
+          <input id="reply-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;">
           <input id="reply-input" type="text" placeholder="Type a reply…" autocomplete="off">
           <button id="reply-send" type="submit">Send</button>
         </form>
@@ -247,7 +252,22 @@
         row.className = "msg-row " + m.sender;
         const bubble = document.createElement("div");
         bubble.className = "msg " + m.sender;
-        bubble.textContent = m.message;
+        if (m.attachment_url) {
+          const img = document.createElement("img");
+          img.className = "msg-img";
+          img.src = m.attachment_url;
+          img.alt = "Screenshot";
+          img.addEventListener("click", () => window.open(m.attachment_url, "_blank"));
+          bubble.appendChild(img);
+          if (m.message) {
+            const caption = document.createElement("div");
+            caption.style.marginTop = "6px";
+            caption.textContent = m.message;
+            bubble.appendChild(caption);
+          }
+        } else {
+          bubble.textContent = m.message;
+        }
         row.appendChild(bubble);
         if (m.sender === "bot") {
           const tag = document.createElement("div");
@@ -264,6 +284,48 @@
       });
       box.scrollTop = box.scrollHeight;
     }
+
+    document.getElementById("reply-attach").addEventListener("click", () => {
+      if (!activeThreadId) return;
+      document.getElementById("reply-file").click();
+    });
+
+    document.getElementById("reply-file").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!file || !activeThreadId) return;
+
+      const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+      if (!allowed.includes(file.type)) {
+        alert("Only PNG, JPEG, WEBP or GIF screenshots are supported.");
+        return;
+      }
+      if (file.size > 4 * 1024 * 1024) {
+        alert("That image is too large (max 4MB).");
+        return;
+      }
+
+      const attachBtn = document.getElementById("reply-attach");
+      attachBtn.disabled = true;
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const dataBase64 = dataUrl.split(",")[1] || "";
+        await fetch(`${API_BASE}/api/chat-upload`, {
+          method: "POST", headers: authHeaders(),
+          body: JSON.stringify({ threadId: activeThreadId, fileName: file.name, mimeType: file.type, dataBase64 })
+        });
+        loadMessages();
+      } catch (err) {
+        alert("Sorry, that screenshot couldn't be sent. Please try again.");
+      } finally {
+        attachBtn.disabled = false;
+      }
+    });
 
     document.getElementById("reply-form").addEventListener("submit", async (e) => {
       e.preventDefault();
