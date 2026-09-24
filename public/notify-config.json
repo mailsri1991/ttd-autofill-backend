@@ -1,25 +1,68 @@
 {
   "events": [
     {
-      "id": "special_entry_darshan",
-      "label": "Special Entry Darshan (₹300)",
-      "releaseDayOfMonth": 24,
+      "id": "arjitha_dip_registration",
+      "label": "Arjitha Seva e-dip registration",
+      "releaseDayOfMonth": 18,
       "releaseHour": 10,
       "releaseMinute": 0,
-      "dayBefore": {
+      "reminder": {
         "enabled": true,
-        "hour": 18,
-        "minute": 0,
-        "skipIfActivePass": true,
-        "title": "Special Entry Darshan tickets release tomorrow",
-        "message": "Tickets usually open tomorrow at 10 AM. Get your pass now so autofill is ready when the window opens."
-      },
-      "dayOf": {
+        "hoursBefore": 1,
+        "title": "Arjitha Seva e-dip registration opens in 1 hour",
+        "message": "Arjitha Seva e-dip registration (Suprabhatam, Thomala, Archana, etc.) usually opens at 10 AM and runs through the 20th."
+      }
+    },
+    {
+      "id": "arjitha_payment_window",
+      "label": "Arjitha Seva lucky-dip payment window",
+      "releaseDayOfMonth": 20,
+      "releaseHour": 12,
+      "releaseMinute": 0,
+      "reminder": {
         "enabled": true,
-        "minutesBefore": 15,
-        "skipIfActivePass": false,
-        "title": "Special Entry Darshan opening soon",
-        "message": "Tickets usually open in 15 minutes (10 AM). Get to the booking page and be ready to click Fill."
+        "hoursBefore": 1,
+        "title": "Arjitha Seva payment window opens in 1 hour",
+        "message": "The payment window for allotted Arjitha Seva lucky-dip tickets usually opens at 12 PM and runs through the 22nd."
+      }
+    },
+    {
+      "id": "arjitha_general_tickets",
+      "label": "General Arjitha Seva tickets",
+      "releaseDayOfMonth": 21,
+      "releaseHour": 10,
+      "releaseMinute": 0,
+      "reminder": {
+        "enabled": true,
+        "hoursBefore": 1,
+        "title": "General Arjitha Seva tickets open in 1 hour",
+        "message": "General Arjitha Seva tickets (Kalyanotsavam, Unjal Seva, etc.) usually open at 10 AM."
+      }
+    },
+    {
+      "id": "virtual_seva_darshan",
+      "label": "Virtual Sevas and darshan slots",
+      "releaseDayOfMonth": 21,
+      "releaseHour": 15,
+      "releaseMinute": 0,
+      "reminder": {
+        "enabled": true,
+        "hoursBefore": 1,
+        "title": "Virtual Seva darshan slots open in 1 hour",
+        "message": "Virtual Sevas and their associated darshan slots usually open at 3 PM."
+      }
+    },
+    {
+      "id": "angapradakshinam",
+      "label": "Angapradakshinam tokens",
+      "releaseDayOfMonth": 23,
+      "releaseHour": 10,
+      "releaseMinute": 0,
+      "reminder": {
+        "enabled": true,
+        "hoursBefore": 1,
+        "title": "Angapradakshinam tokens open in 1 hour",
+        "message": "Angapradakshinam tokens usually open at 10 AM."
       }
     },
     {
@@ -28,20 +71,11 @@
       "releaseDayOfMonth": 23,
       "releaseHour": 11,
       "releaseMinute": 0,
-      "dayBefore": {
+      "reminder": {
         "enabled": true,
-        "hour": 18,
-        "minute": 0,
-        "skipIfActivePass": true,
-        "title": "Srivani Trust tickets release tomorrow",
-        "message": "Tickets usually open tomorrow at 11 AM. Get your pass now so autofill is ready when the window opens."
-      },
-      "dayOf": {
-        "enabled": true,
-        "minutesBefore": 15,
-        "skipIfActivePass": false,
-        "title": "Srivani Trust tickets opening soon",
-        "message": "Tickets usually open in 15 minutes (11 AM). Get to the booking page and be ready to click Fill."
+        "hoursBefore": 1,
+        "title": "Srivani Trust tickets open in 1 hour",
+        "message": "Srivani Trust darshan tickets and rooms usually open at 11 AM."
       }
     },
     {
@@ -50,20 +84,37 @@
       "releaseDayOfMonth": 23,
       "releaseHour": 15,
       "releaseMinute": 0,
-      "dayBefore": {
+      "reminder": {
         "enabled": true,
-        "hour": 18,
-        "minute": 0,
-        "skipIfActivePass": false,
-        "title": "Free senior citizen darshan tickets release tomorrow",
-        "message": "Free darshan tickets for senior citizens and the physically challenged usually open tomorrow at 3 PM."
-      },
-      "dayOf": {
+        "hoursBefore": 1,
+        "title": "Senior citizen darshan tokens open in 1 hour",
+        "message": "Free darshan tokens for senior citizens, the physically challenged, and the medical quota usually open at 3 PM."
+      }
+    },
+    {
+      "id": "special_entry_darshan",
+      "label": "Special Entry Darshan (₹300)",
+      "releaseDayOfMonth": 24,
+      "releaseHour": 10,
+      "releaseMinute": 0,
+      "reminder": {
         "enabled": true,
-        "minutesBefore": 15,
-        "skipIfActivePass": false,
-        "title": "Senior citizen darshan tickets opening soon",
-        "message": "Free tickets usually open in 15 minutes (3 PM). Head to the TTD booking page to apply."
+        "hoursBefore": 1,
+        "title": "Special Entry Darshan tickets open in 1 hour",
+        "message": "₹300 Special Entry Darshan (SED) tickets usually open at 10 AM."
+      }
+    },
+    {
+      "id": "accommodation",
+      "label": "Tirumala/Tirupati accommodation",
+      "releaseDayOfMonth": 24,
+      "releaseHour": 15,
+      "releaseMinute": 0,
+      "reminder": {
+        "enabled": true,
+        "hoursBefore": 1,
+        "title": "Accommodation quota opens in 1 hour",
+        "message": "The Tirumala/Tirupati accommodation (rooms) quota usually opens at 3 PM."
       }
     }
   ]
