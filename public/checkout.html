@@ -78,7 +78,11 @@
         });
         const order = await orderRes.json();
         if (!orderRes.ok) throw new Error(order.error || "Could not start checkout.");
-
+        // GA4 ecommerce: one item per plan, priced from the server's order amount (paise).
+        const gaItem = { item_id: plan, item_name: order.plan_label || PLAN_LABELS[plan], price: order.amount / 100, quantity: 1 };
+        if (typeof gtag === "function") {
+          gtag("event", "begin_checkout", { currency: order.currency || "INR", value: order.amount / 100, items: [gaItem] });
+        }
         const rzp = new Razorpay({
           key: order.key_id,
           amount: order.amount,
@@ -97,8 +101,26 @@
               });
               const result = await verifyRes.json();
               if (!verifyRes.ok) throw new Error(result.error || "Payment verification failed.");
-              const auto = document.getElementById("autoActivate").checked ? "&auto=1" : "";
-              location.href = `/success.html?key=${encodeURIComponent(result.license_key)}&expires=${encodeURIComponent(result.expires_at)}${auto}`;
+                            const auto = document.getElementById("autoActivate").checked ? "&auto=1" : "";
+              const goToSuccess = () => {
+                location.href = `/success.html?key=${encodeURIComponent(result.license_key)}&expires=${encodeURIComponent(result.expires_at)}${auto}`;
+              };
+              // GA4 purchase: transaction_id is the Razorpay payment ID, so GA ignores any duplicate
+              // send for the same payment. Wait for GA to confirm (max 1.5s) before leaving the page.
+              if (typeof gtag === "function") {
+                let left = false;
+                const leave = () => { if (!left) { left = true; goToSuccess(); } };
+                gtag("event", "purchase", {
+                  transaction_id: response.razorpay_payment_id,
+                  currency: order.currency || "INR",
+                  value: order.amount / 100,
+                  items: [gaItem],
+                  event_callback: leave
+                });
+                setTimeout(leave, 1500);
+              } else {
+                goToSuccess();
+              }
             } catch (e) {
               errEl.textContent = e.message;
               payBtn.disabled = false;
