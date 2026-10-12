@@ -10,7 +10,7 @@
   gtag('config', 'G-EP41BDC78Z');
 </script>
 <meta charset="UTF-8">
-<title>TTD Darshan Autofill — Checkout</title>
+<title>Checkout | TTD Darshan Autofill</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   * { box-sizing: border-box; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
@@ -30,11 +30,13 @@
   }
   .auto-row input { width: auto; margin-top: 2px; }
   .auto-sub { display: block; font-size: 11px; color: #888; margin-top: 2px; }
+  .agree { font-size: 11.5px; color: #777; text-align: center; margin: 10px 0 0; line-height: 1.5; }
+  .agree a { color: #b5451b; }
 </style>
 </head>
 <body>
   <div class="card">
-    <h1>Unlock TTD Darshan Autofill</h1>
+    <h1>Get your license key</h1>
     <p id="planDesc">Loading plan…</p>
     <label for="email">Email (your license key goes here)</label>
     <input type="email" id="email" placeholder="you@example.com">
@@ -46,6 +48,7 @@
       </span>
     </label>
     <button id="payBtn">Pay now</button>
+    <p class="agree"><a href="https://www.ttddarshanautofill.com/terms.html" target="_blank" rel="noopener">Terms</a> &nbsp;·&nbsp; <a href="https://www.ttddarshanautofill.com/refund-policy.html" target="_blank" rel="noopener">Policy</a></p>
     <div id="err"></div>
   </div>
 
@@ -53,10 +56,10 @@
   <script>
     const params = new URLSearchParams(location.search);
     const plan = params.get("plan");
-    const PLAN_LABELS = { "7d": "7 days — ₹99", "30d": "30 days — ₹299", "90d": "90 days — ₹699", "365d": "1 year — ₹1599" };
+    const PLAN_LABELS = { "7d": "7 days · ₹99", "30d": "30 days · ₹299", "90d": "90 days · ₹699", "365d": "1 year · ₹1599" };
     document.getElementById("planDesc").textContent = PLAN_LABELS[plan]
       ? `Plan: ${PLAN_LABELS[plan]}`
-      : "Unknown plan — go back and pick a plan again.";
+      : "Unknown plan. Go back and pick a plan again.";
 
     const payBtn = document.getElementById("payBtn");
     const errEl = document.getElementById("err");
@@ -101,7 +104,7 @@
               });
               const result = await verifyRes.json();
               if (!verifyRes.ok) throw new Error(result.error || "Payment verification failed.");
-                            const auto = document.getElementById("autoActivate").checked ? "&auto=1" : "";
+              const auto = document.getElementById("autoActivate").checked ? "&auto=1" : "";
               const goToSuccess = () => {
                 location.href = `/success.html?key=${encodeURIComponent(result.license_key)}&expires=${encodeURIComponent(result.expires_at)}${auto}`;
               };
