@@ -49,6 +49,13 @@
         <span class="auto-sub">Needs the TTD Darshan Autofill extension installed here. Otherwise, copy your key and paste it into the extension yourself after payment.</span>
       </span>
     </label>
+    <label class="auto-row">
+      <input type="checkbox" id="remindMe">
+      <span>
+        Email me before each TTD release
+        <span class="auto-sub">About 2 emails a month with release dates and a day-before checklist. Unsubscribe anytime.</span>
+      </span>
+    </label>
     <button id="payBtn">Pay now</button>
     <p class="agree"><a href="https://www.ttddarshanautofill.com/terms.html" target="_blank" rel="noopener">Terms</a> &nbsp;·&nbsp; <a href="https://www.ttddarshanautofill.com/refund-policy.html" target="_blank" rel="noopener">Policy</a></p>
     <div id="err"></div>
@@ -106,6 +113,16 @@
               });
               const result = await verifyRes.json();
               if (!verifyRes.ok) throw new Error(result.error || "Payment verification failed.");
+              if (document.getElementById("remindMe").checked) {
+                try {
+                  fetch("/api/subscribe", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, source: "checkout" }),
+                    keepalive: true
+                  }).catch(() => {});
+                } catch (e) {}
+              }
               const auto = document.getElementById("autoActivate").checked ? "&auto=1" : "";
               const goToSuccess = () => {
                 location.href = `/success.html?key=${encodeURIComponent(result.license_key)}&expires=${encodeURIComponent(result.expires_at)}${auto}`;
