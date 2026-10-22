@@ -24,12 +24,16 @@ export default {
       });
       if (error) throw error;
 
-      sendFeedbackNotificationEmail({
-        message: text,
-        email: cleanEmail,
-        extensionVersion,
-        lang
-      }).catch(err => console.error("Failed to send feedback notification email:", err));
+      try {
+        await sendFeedbackNotificationEmail({
+          message: text,
+          email: cleanEmail,
+          extensionVersion,
+          lang
+        });
+      } catch (err) {
+        console.error("Failed to send feedback notification email:", err);
+      }
 
       return jsonResponse({ ok: true });
     } catch (err) {
