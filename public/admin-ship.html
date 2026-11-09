@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Mark order shipped</title>
+<style>
+body{font-family:Arial,sans-serif;background:#fdf6ea;color:#2b1a12;margin:0;padding:24px}
+.box{max-width:440px;margin:0 auto;background:#fff;border:1px solid #eadbc3;border-radius:10px;padding:22px}
+h1{color:#6e1d10;font-size:22px;margin-top:0}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+input{width:100%;box-sizing:border-box;padding:11px;border:1px solid #d9c6a5;border-radius:6px;font-size:16px}
+button{margin-top:16px;width:100%;padding:13px;border:0;border-radius:24px;background:#e07a3b;color:#fff;font-size:17px;font-weight:600;cursor:pointer}
+#msg{margin-top:14px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>Mark calendar / diary order as shipped</h1>
+<p style="font-size:14px">The customer gets an email with the courier and tracking number.</p>
+<form id="f">
+<label for="token">Admin password</label><input id="token" type="password" autocomplete="current-password" required>
+<label for="ref">Order number (e.g. CAL1001)</label><input id="ref" required>
+<label for="courier">Courier name</label><input id="courier" placeholder="India Post / DTDC / Delhivery" required>
+<label for="tracking">Tracking number</label><input id="tracking" required>
+<button type="submit">Mark shipped and email customer</button>
+</form>
+<div id="msg" role="status"></div>
+</div>
+<script>
+var t=document.getElementById("token");
+try{t.value=sessionStorage.getItem("adm")||""}catch(e){}
+document.getElementById("f").addEventListener("submit",async function(e){
+  e.preventDefault();var m=document.getElementById("msg");m.style.color="#2b1a12";m.textContent="Saving...";
+  try{sessionStorage.setItem("adm",t.value)}catch(e){}
+  var r=await fetch("/api/merch-ship",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:t.value,order_ref:document.getElementById("ref").value,courier:document.getElementById("courier").value,tracking_no:document.getElementById("tracking").value})});
+  var j=await r.json();
+  if(r.ok){m.style.color="#1a7a3c";m.textContent="Done. "+j.order_ref+" marked shipped and email sent to "+j.email+".";document.getElementById("ref").value="";document.getElementById("tracking").value="";}
+  else{m.style.color="#a8231b";m.textContent=j.error||"Something went wrong.";}
+});
+</script>
+</body>
+</html>
