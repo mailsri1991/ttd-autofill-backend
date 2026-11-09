@@ -34,7 +34,7 @@ try{t.value=sessionStorage.getItem("adm")||""}catch(e){}
 document.getElementById("f").addEventListener("submit",async function(e){
   e.preventDefault();var m=document.getElementById("msg");m.style.color="#2b1a12";m.textContent="Saving...";
   try{sessionStorage.setItem("adm",t.value)}catch(e){}
-  var r=await fetch("/api/merch-ship",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:t.value,order_ref:document.getElementById("ref").value,courier:document.getElementById("courier").value,tracking_no:document.getElementById("tracking").value})});
+  var r=await fetch("/api/merch?action=ship",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:t.value,order_ref:document.getElementById("ref").value,courier:document.getElementById("courier").value,tracking_no:document.getElementById("tracking").value})});
   var j=await r.json();
   if(r.ok){m.style.color="#1a7a3c";m.textContent="Done. "+j.order_ref+" marked shipped and email sent to "+j.email+".";document.getElementById("ref").value="";document.getElementById("tracking").value="";}
   else{m.style.color="#a8231b";m.textContent=j.error||"Something went wrong.";}
