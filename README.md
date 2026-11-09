@@ -96,3 +96,6 @@ you go live except which Razorpay keys are in your environment variables.
 - Razorpay: no monthly fee, just their per-transaction fee (currently ~2% for
   UPI/cards on standard pricing — confirm current rates in your dashboard, they do
   change).
+
+
+  
