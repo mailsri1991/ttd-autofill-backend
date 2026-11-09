@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { fulfillOrder } from "../lib/fulfillOrder.js";
+import { fulfillMerchOrder } from "../lib/fulfillMerch.js";
 import { jsonResponse } from "../lib/cors.js";
 
 export default {
@@ -20,7 +21,12 @@ export default {
       const event = JSON.parse(rawBody);
       if (event.event === "payment.captured" || event.event === "order.paid") {
         const payment = event.payload.payment.entity;
-        await fulfillOrder(payment.order_id, payment.id);
+        // Calendar / diary orders carry notes.kind = "merch"; everything else is a pass.
+        if (payment.notes && payment.notes.kind === "merch") {
+          await fulfillMerchOrder(payment.order_id, payment.id);
+        } else {
+          await fulfillOrder(payment.order_id, payment.id);
+        }
       }
       return jsonResponse({ ok: true });
     } catch (err) {
