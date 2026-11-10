@@ -1,11 +1,12 @@
 import merchOrder from "../lib/merchOrder.js";
 import merchVerify from "../lib/merchVerify.js";
 import merchShip from "../lib/merchShip.js";
+import merchEnquiry from "../lib/merchEnquiry.js";
 import { jsonResponse, preflightResponse } from "../lib/cors.js";
 
 // One function for all calendar / diary actions (keeps the project within
-// Vercel's function limit): /api/merch?action=order | verify | ship
-const ROUTES = { order: merchOrder, verify: merchVerify, ship: merchShip };
+// Vercel's function limit): /api/merch?action=order | verify | ship | enquiry
+const ROUTES = { order: merchOrder, verify: merchVerify, ship: merchShip, enquiry: merchEnquiry };
 
 export default {
   async fetch(request) {
