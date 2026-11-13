@@ -10,7 +10,7 @@
   gtag('config', 'G-EP41BDC78Z');
 </script>
 <meta charset="UTF-8">
-<title>Checkout | TTD Darshan Autofill</title>
+<title>Checkout | TTD Darshan Quickfill</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   * { box-sizing: border-box; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
@@ -44,7 +44,7 @@
       <input type="checkbox" id="autoActivate" checked>
       <span>
         Activate automatically in this browser
-        <span class="auto-sub">Needs the TTD Darshan Autofill extension installed here. Otherwise, copy your key and paste it into the extension yourself after payment.</span>
+        <span class="auto-sub">Needs the TTD Darshan Quickfill extension installed here. Otherwise, copy your key and paste it into the extension yourself after payment.</span>
       </span>
     </label>
     <button id="payBtn">Pay now</button>
@@ -91,7 +91,7 @@
           amount: order.amount,
           currency: order.currency,
           order_id: order.order_id,
-          name: "TTD Darshan Autofill",
+          name: "TTD Darshan Quickfill",
           description: `${order.plan_label} plan`,
           prefill: { email },
           theme: { color: "#d9631f" },
